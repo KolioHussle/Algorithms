@@ -5,25 +5,31 @@ using UnityEngine;
 
 public class DungeonGenerator : MonoBehaviour
 {
-    public RectInt startRoom = new RectInt(0, 0, 100, 50);
+    public int width;
+    public int height;
+    public RectInt startRoom;
     private List<RectInt> newRooms = new List<RectInt>();
     public int roomsToCreate;
+    public float timeToGenerate;
 
     void Start()
     {
-        VerticalSplit(startRoom, roomsToCreate);
-        //StartCoroutine(GenerateDungeon());
+        startRoom = new RectInt(0, 0, width, height);
+        SplittingRooms(startRoom, roomsToCreate);
     }
 
     void Update()
     {
-        foreach (var room in newRooms)
+        AlgorithmsUtils.DebugRectInt(startRoom, Color.yellow);
+        StartCoroutine(GenerateDungeon());
+        
+        /*foreach (var room in newRooms)
         {
             AlgorithmsUtils.DebugRectInt(room, Color.yellow);
-        }
+        }*/
     }
 
-    void VerticalSplit(RectInt room, int numberOfRooms)
+    void SplittingRooms(RectInt room, int numberOfRooms)
     {
         if (numberOfRooms <= 0)
         {
@@ -41,40 +47,40 @@ public class DungeonGenerator : MonoBehaviour
 
         if (directionDevider)
         {       
-        int WidthMinPos = startRoom.xMin + 5;
-        int WidthMaxPos = startRoom.xMax - 5;
+        int WidthMinPos = room.xMin + 10;
+        int WidthMaxPos = room.xMax - 10;
 
         int randomPointX = Random.Range(WidthMinPos, WidthMaxPos);
 
         RectInt leftRoom = new RectInt(room.x, room.y, randomPointX - room.x, room.height);
-        RectInt rightRoom = new RectInt(room.x, room.y, room.x - randomPointX, room.height);
+        RectInt rightRoom = new RectInt(randomPointX, room.y, room.xMax - randomPointX, room.height);
 
-        VerticalSplit(leftRoom, numberOfRooms - 1);
-        VerticalSplit(rightRoom, numberOfRooms - 1);
+        SplittingRooms(leftRoom, numberOfRooms - 1);
+        SplittingRooms(rightRoom, numberOfRooms - 1);
         }
 
         else 
         {         
-        int HeightMinPos = startRoom.yMin + 5;
-        int HeightMaxPos = startRoom.yMax - 5;
+        int HeightMinPos = room.yMin + 10;
+        int HeightMaxPos = room.yMax - 10;
 
         int randomPointY = Random.Range(HeightMinPos, HeightMaxPos);
 
-        RectInt upRoom = new RectInt(room.x, room.y, room.width, room.y - randomPointY);
+        RectInt upRoom = new RectInt(room.x, randomPointY, room.width, room.yMax - randomPointY);
         RectInt downRoom = new RectInt(room.x, room.y, room.width,randomPointY - room.y);
 
-        VerticalSplit(upRoom, numberOfRooms - 1);
-        VerticalSplit(downRoom, numberOfRooms - 1);
+        SplittingRooms(upRoom, numberOfRooms - 1);
+        SplittingRooms(downRoom, numberOfRooms - 1);
         }
     }
 
     IEnumerator GenerateDungeon()
     {
-        yield return new WaitForSeconds(1f);
 
         foreach (var room in newRooms)
         {
-            VerticalSplit(room, roomsToCreate);
+            yield return new WaitForSeconds(timeToGenerate);
+            AlgorithmsUtils.DebugRectInt(room, Color.yellow);
         }
     }
 }

@@ -406,12 +406,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e76d446904a6e394d9c5396665a3a744, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  width: 300
+  height: 150
   startRoom:
     x: 0
     y: 0
     width: 100
     height: 50
-  roomsToCreate: 3
+  roomsToCreate: 7
+  timeToGenerate: 0.1
 --- !u!4 &789231149
 Transform:
   m_ObjectHideFlags: 0
