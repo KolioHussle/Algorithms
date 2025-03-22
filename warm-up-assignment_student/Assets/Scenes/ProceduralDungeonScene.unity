@@ -408,7 +408,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 150
   height: 50
-  roomsToCreate: 10
+  roomsToCreate: 20
   timeToGenerate: 0.01
 --- !u!4 &789231149
 Transform:

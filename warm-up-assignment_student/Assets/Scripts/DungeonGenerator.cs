@@ -31,11 +31,6 @@ public class DungeonGenerator : MonoBehaviour
         {
             StartCoroutine(ShowingDoors());
         }
-
-        /*foreach (var room in newRooms)
-        {
-            AlgorithmsUtils.DebugRectInt(room, Color.yellow);
-        }*/
     }
 
     void SplittingRooms(RectInt room, int numberOfRooms)
@@ -96,48 +91,27 @@ public class DungeonGenerator : MonoBehaviour
     void MakingDoors()
     {
         newDoors.Clear();
-        HashSet<Vector2Int> placedDoors = new HashSet<Vector2Int>();
-        List<Vector2Int> doors = new List<Vector2Int>();
-        Debug.Log($" Creating doors for {newRooms.Count} rooms...");
+        List<Vector2Int> placedDoors = new List<Vector2Int>();
 
         for (int i = 1; i < newRooms.Count; i++)
         {
             for (int j = i + 1; j < newRooms.Count; j++)
             {
-
-                /*if (AlgorithmsUtils.Intersects(newRooms[i], newRooms[j]))
-                {
-                    Debug.Log($" Room {i} at {newRooms[i].position} intersects with Room {j} at {newRooms[j].position}");
-                    RectInt door = AlgorithmsUtils.Intersect(newRooms[i], newRooms[j]);
-
-                    if (door.width > door.height)
-                    {
-                        door.height = 2;
-                    }
-                    else
-                    {
-                        door.width = 2;
-                    }
-
-                    newDoors.Add(door);
-                    Debug.Log($" Door added at {door.position} with size {door.size}");
-                }*/
-
                 if (AlgorithmsUtils.Intersects(newRooms[i], newRooms[j]))
                 {
                     RectInt doorArea = AlgorithmsUtils.Intersect(newRooms[i], newRooms[j]);
 
                     // Ensure a 2x2 door at the center of the intersection
                     Vector2Int doorPos;
-                    if (doorArea.width > doorArea.height) // Horizontal door
+                    /*if (doorArea.width > doorArea.height) // Horizontal door
                     {
                         doorPos = new Vector2Int(doorArea.x + (doorArea.width / 2) - 1, doorArea.y);
-                        doorArea = new RectInt(doorPos, new Vector2Int(2, 2));
+                        doorArea = new RectInt(doorPos, new Vector2Int(2, 1));
                     }
                     else // Vertical door
                     {
                         doorPos = new Vector2Int(doorArea.x, doorArea.y + (doorArea.height / 2) - 1);
-                        doorArea = new RectInt(doorPos, new Vector2Int(2, 2));
+                        doorArea = new RectInt(doorPos, new Vector2Int(1, 2));
                     }
 
                     // Prevent duplicate doors
@@ -145,12 +119,24 @@ public class DungeonGenerator : MonoBehaviour
                     {
                         newDoors.Add(doorArea);
                         placedDoors.Add(doorPos);
-                        Debug.Log($"Door added at {doorPos} with size {doorArea.size}");
+                    }*/
+                    if (doorArea.width > doorArea.height) // Horizontal door
+                    {
+                        int doorX = doorArea.x + (doorArea.width / 2);
+                        int doorY = doorArea.y - 1; // Small gap between rooms
+                        doorPos = new Vector2Int(doorX, doorY);
+                        doorArea = new RectInt(doorPos, new Vector2Int(2, 2)); // Make the door a small square
                     }
-                }     
+                    else // Vertical door
+                    {
+                        int doorX = doorArea.x - 1; // Small gap between rooms
+                        int doorY = doorArea.y + (doorArea.height / 2);
+                        doorPos = new Vector2Int(doorX, doorY);
+                        doorArea = new RectInt(doorPos, new Vector2Int(2, 2)); // Make the door a small square
+                    }
+                }
             }
         }
-        Debug.Log($" Total doors created: {newDoors.Count}");
     }
 
     IEnumerator ShowingDoors()
