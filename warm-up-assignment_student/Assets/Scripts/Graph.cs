@@ -76,4 +76,62 @@ public class Graph<T>
             }
         }
     }
+
+    public void BFS(T startNode)
+    {
+        //List<T> queue = new List<T>();
+        Queue<T> qeue2 = new Queue<T>();
+        List<T> discovered = new List<T>();
+
+
+        T v = startNode;
+        //queue.Add(v);
+
+        qeue2.Enqueue(v);
+
+        discovered.Add(v);
+        //Debug.Log(v + " was discovered");
+
+        while (/*queue.Count*/ qeue2.Count > 0)
+        {
+            //v = queue[0];
+            //queue.RemoveAt(0);
+            v = qeue2.Dequeue();
+            Debug.Log(v);
+            foreach (var w in GetNeighbors(v))
+            {
+                if (!discovered.Contains(w))
+                {
+                    //queue.Add(w);
+                    qeue2.Enqueue(w);
+                    discovered.Add(w);
+                }
+            }
+        }
+    }
+
+    public void DFS(T startNode)
+    {
+        Stack<T> S = new Stack<T>();
+        List<T> discovered = new List<T>();
+
+        T v = startNode;
+        S.Push(v);
+
+        while (S.Count > 0)
+        {
+            v = S.Pop();
+
+            if (!discovered.Contains(v))
+            {
+                discovered.Add(v);
+                Debug.Log(v);
+
+                foreach (var w in GetNeighbors(v))
+                {
+                    S.Push(w);
+                }
+            }
+        }
+    }
 }

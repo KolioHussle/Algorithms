@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEngine;
@@ -17,11 +18,11 @@ public class DungeonGenerator : MonoBehaviour
     public float timeToGenerate;
     private bool hasGenerated = false;
 
-    private Graph<RectInt> dungeonGraph;
+    private Graph<Vector2Int> dungeonGraph;
 
     void Start()
     {
-        dungeonGraph = new Graph<RectInt>();
+        dungeonGraph = new Graph<Vector2Int>();
 
         startRoom = new RectInt(0, 0, width, height);
 
@@ -31,16 +32,11 @@ public class DungeonGenerator : MonoBehaviour
 
         CreateNodes();
         CreatdEdges();
-
-        //Debug.Log($"Total Graph Nodes: {dungeonGraph.GetNodes().Count}");
-        //dungeonGraph.PrintGraph();
-        //TestMinimalGraph();
     }
 
     void Update()
     {
         AlgorithmsUtils.DebugRectInt(startRoom, Color.yellow);
-
         StartCoroutine(GenerateDungeon());
         if (hasGenerated)
         {
@@ -48,24 +44,6 @@ public class DungeonGenerator : MonoBehaviour
             StartCoroutine(ShowingDoors());
         }
     }
-
-    void TestMinimalGraph()
-    {
-        // Create two intersecting rooms manually
-        RectInt room1 = new RectInt(0, 0, 10, 10);
-        RectInt room2 = new RectInt(5, 5, 10, 10);
-
-        dungeonGraph.AddNode(room1);
-        dungeonGraph.AddNode(room2);
-
-        // Add edge between them
-        dungeonGraph.AddEdge(room1, room2);
-
-        // Print the graph
-        dungeonGraph.PrintGraph();
-    }
-
-
 
     /*void SplittingRooms(RectInt room, int numberOfRooms)
     {
@@ -234,7 +212,6 @@ public class DungeonGenerator : MonoBehaviour
                     {
                         newDoors.Add(new RectInt(doorPosition, Vector2Int.one)); // Size of the door is 1x1
                         usedDoorPositions1.Add(doorPosition); // Track the door position
-                        Debug.Log($"Door added between room {roomA.position} and {roomB.position} at {doorPosition}");
                     }
                 }
                 
@@ -249,7 +226,8 @@ public class DungeonGenerator : MonoBehaviour
          {
                if (room != null)
                {
-                  dungeonGraph.AddNode(room);
+                Vector2Int center = GetRoomCenter(room);
+                dungeonGraph.AddNode(center);
                }
          }
     }
@@ -260,11 +238,32 @@ public class DungeonGenerator : MonoBehaviour
         {
             for (int j = i + 1; j < newRooms.Count; j++)
             {
-                if (AlgorithmsUtils.Intersects(newRooms[i], newRooms[j]))
+                if (AreRoomsAdjacent(newRooms[i], newRooms[j]))
                 {
-                    dungeonGraph.AddEdge(newRooms[i], newRooms[j]);
-                    Debug.Log($"Connected Room {i} with Room {j}");
+                    Vector2Int doorPosition = GetSharedEdgeMidpoint(newRooms[i], newRooms[j]);
+
+                    if (doorPosition != Vector2Int.zero)
+                    {
+                        dungeonGraph.AddEdge(GetRoomCenter(newRooms[i]), GetRoomCenter(newRooms[j])); // Connect the room centers
+                    }
                 }
+            }
+        }
+    }
+
+    void VisualizeGraph()
+    {
+        foreach (var node in dungeonGraph.GetNodes())
+        {
+            // Visualize the node (center of the room) with a marker (e.g., a sphere in Unity)
+            Vector3 nodePosition = new Vector3(node.x, 0, node.y); // Convert from 2D to 3D space
+            Debug.DrawLine(nodePosition, nodePosition + Vector3.up, Color.green, 10f); // Draw a line above the node for visibility
+
+            foreach (var neighbor in dungeonGraph.GetNeighbors(node))
+            {
+                // Draw a line to each neighbor
+                Vector3 neighborPosition = new Vector3(neighbor.x, 0, neighbor.y); // Convert from 2D to 3D space
+                Debug.DrawLine(nodePosition, neighborPosition, Color.red, 10f);
             }
         }
     }
@@ -276,6 +275,7 @@ public class DungeonGenerator : MonoBehaviour
             yield return new WaitForSeconds(timeToGenerate);
             AlgorithmsUtils.DebugRectInt(door, Color.blue);
         }
+        VisualizeGraph();
     }
 
     IEnumerator GenerateDungeon()
@@ -327,5 +327,12 @@ public class DungeonGenerator : MonoBehaviour
         }
 
         return Vector2Int.zero; // not adjacent
+    }
+
+    Vector2Int GetRoomCenter(RectInt room)
+    {
+        int centerX = room.xMin + room.width / 2;
+        int centerY = room.yMin + room.height / 2;
+        return new Vector2Int(centerX, centerY);
     }
 }
