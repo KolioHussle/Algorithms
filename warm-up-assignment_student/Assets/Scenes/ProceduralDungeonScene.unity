@@ -406,9 +406,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e76d446904a6e394d9c5396665a3a744, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 75
-  height: 75
-  roomsToCreate: 20
+  width: 50
+  height: 50
+  roomsToCreate: 7
   timeToGenerate: 0.01
 --- !u!4 &789231149
 Transform:

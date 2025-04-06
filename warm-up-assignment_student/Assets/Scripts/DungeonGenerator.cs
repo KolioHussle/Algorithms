@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Overlays;
 using UnityEngine;
 
 public class DungeonGenerator : MonoBehaviour
@@ -13,28 +14,28 @@ public class DungeonGenerator : MonoBehaviour
     private List<RectInt> newRooms = new List<RectInt>();
     private List<RectInt> newDoors = new List<RectInt>();
     public int roomsToCreate;
-    //private int roomCount = 0;
     public float timeToGenerate;
     private bool hasGenerated = false;
 
     private Graph<RectInt> dungeonGraph;
+    HashSet<(Vector2Int, Vector2Int)> usedRoomPairs = new();
 
     void Start()
     {
         dungeonGraph = new Graph<RectInt>();
 
         startRoom = new RectInt(0, 0, width, height);
-        SplittingRooms(startRoom, roomsToCreate);
-        //SplittingRooms1(startRoom, roomsToCreate);
+
+        //SplittingRooms(startRoom, roomsToCreate);
+        SplittingRooms1(startRoom, roomsToCreate);
         MakingDoors();
         //MakingDoors1();
 
         CreateNodes();
         CreatdEdges();
 
-       /* Debug.Log($"Total Rooms: {newRooms.Count}");
-        Debug.Log($"Total Graph Nodes: {dungeonGraph.GetNodes().Count}");*/
-        dungeonGraph.PrintGraph();
+        //Debug.Log($"Total Graph Nodes: {dungeonGraph.GetNodes().Count}");
+        //dungeonGraph.PrintGraph();
         //TestMinimalGraph();
     }
 
@@ -45,28 +46,9 @@ public class DungeonGenerator : MonoBehaviour
         StartCoroutine(GenerateDungeon());
         if (hasGenerated)
         {
-            //Debug.Log($"Final Room Count: {newRooms.Count}");
+            Debug.Log($"Final Room Count: {newRooms.Count}");
             StartCoroutine(ShowingDoors());
         }
-
-        foreach (var room in newRooms)
-        {
-            List<RectInt> neighbors = dungeonGraph.GetNeighbors(room);
-            if (neighbors != null)
-            {
-                foreach (var neighbor in neighbors)
-                {
-                    Vector2 roomCenter = new Vector2(room.x + room.width / 2f, room.y + room.height / 2f);
-                    Vector2 neighborCenter = new Vector2(neighbor.x + neighbor.width / 2f, neighbor.y + neighbor.height / 2f);
-                    Debug.DrawLine(roomCenter, neighborCenter, Color.green);
-                }
-            }
-        }
-
-        /*foreach (var room in newRooms)
-        {
-            Debug.Log($"Room position: {room.position}, size: {room.size}");
-        }*/
     }
 
     void TestMinimalGraph()
@@ -87,12 +69,12 @@ public class DungeonGenerator : MonoBehaviour
 
 
 
-    void SplittingRooms(RectInt room, int numberOfRooms)
+    /*void SplittingRooms(RectInt room, int numberOfRooms)
     {
         if (numberOfRooms <= 0 || room.width < 10 || room.height < 10)
         {
             newRooms.Add(room);
-            //Debug.Log($" Added final room at {room.position} with size {room.size}");
+            Debug.Log($"Final room count: {newRooms.Count}");
             return;
         }
 
@@ -146,49 +128,123 @@ public class DungeonGenerator : MonoBehaviour
         SplittingRooms(upRoom, numberOfRooms - 1);
         SplittingRooms(downRoom, numberOfRooms - 1);
         }
+    }*/
+    void SplittingRooms1(RectInt startRoom, int maxRooms)
+    {
+        newRooms.Clear();
+        Queue<RectInt> queue = new Queue<RectInt>();
+        queue.Enqueue(startRoom);
+
+        while (queue.Count > 0 && newRooms.Count + queue.Count < maxRooms)
+        {
+            RectInt currentRoom = queue.Dequeue();
+
+            bool splitHorizontally = Random.value > 0.5f;
+            if (currentRoom.width < 10 || currentRoom.height < 10)
+            {
+                newRooms.Add(currentRoom);
+                continue;
+            }
+
+            if (splitHorizontally && currentRoom.height >= 10)
+            {
+                int splitY = Random.Range(currentRoom.yMin + 5, currentRoom.yMax - 5);
+                RectInt bottom = new RectInt(currentRoom.x, currentRoom.y, currentRoom.width, splitY - currentRoom.y);
+                RectInt top = new RectInt(currentRoom.x, splitY, currentRoom.width, currentRoom.yMax - splitY);
+
+                queue.Enqueue(bottom);
+                queue.Enqueue(top);
+            }
+            else if (!splitHorizontally && currentRoom.width >= 10)
+            {
+                int splitX = Random.Range(currentRoom.xMin + 5, currentRoom.xMax - 5);
+                RectInt left = new RectInt(currentRoom.x, currentRoom.y, splitX - currentRoom.x, currentRoom.height);
+                RectInt right = new RectInt(splitX, currentRoom.y, currentRoom.xMax - splitX, currentRoom.height);
+
+                queue.Enqueue(left);
+                queue.Enqueue(right);
+            }
+            else
+            {
+                newRooms.Add(currentRoom);
+            }
+        }
+
+        // Add remaining rooms
+        while (queue.Count > 0)
+        {
+            newRooms.Add(queue.Dequeue());
+        }
     }
 
     void MakingDoors()
     {
         newDoors.Clear();
         Debug.Log("MakingDoors() is running!");
+        //List<RectInt> usedDoorPositions = new List<RectInt>();
+        List<Vector2Int> usedDoorPositions1 = new List<Vector2Int>();
 
         for (int i = 1; i < newRooms.Count; i++)
         {
+            RectInt roomA = newRooms[i];
             for (int j = i + 1; j < newRooms.Count; j++)
             {
-                if (AlgorithmsUtils.Intersects(newRooms[i], newRooms[j]))
+                RectInt roomB = newRooms[j];
+
+                if (AreRoomsAdjacent(roomA, roomB)/*AlgorithmsUtils.Intersects(roomA, roomB)*/)
                 {
-                    RectInt doorArea = AlgorithmsUtils.Intersect(newRooms[i], newRooms[j]);
+                    Debug.Log("hello");
+                    Vector2Int doorPosition = GetSharedEdgeMidpoint(roomA, roomB);
 
-                    if (doorArea.width >= 2 && doorArea.height >= 2) // Ensure enough space for a door
+                    /* RectInt doorArea = AlgorithmsUtils.Intersect(roomA, roomB);
+                     if (doorArea.width > 0 && doorArea.height > 0)
+                     {
+
+                         Vector2Int doorPos;
+                         Vector2Int doorSize;
+
+                         if (doorArea.width > doorArea.height) // Horizontal door
+                         {
+                             doorPos = new Vector2Int(doorArea.x + doorArea.width / 2 - 1, doorArea.y);
+                             doorSize = new Vector2Int(2, 1);
+                         }
+                         else // Vertical door
+                         {
+                             doorPos = new Vector2Int(doorArea.x, doorArea.y + doorArea.height / 2 - 1);
+                             doorSize = new Vector2Int(1, 2);
+                         }
+
+                         // Ensure we do not already have a door at this position
+                         bool doorExists = false;
+                         foreach (var door in usedDoorPositions)
+                         {
+                             if (door.x == doorPos.x && door.y == doorPos.y && door.width == doorSize.x && door.height == doorSize.y)
+                             {
+                                 doorExists = true;
+                                 break;
+                             }
+                         }
+
+                         // Add the door if it doesn't already exist
+                         if (!doorExists)
+                         {
+                             newDoors.Add(new RectInt(doorPos, doorSize));
+                             usedDoorPositions.Add(new RectInt(doorPos, doorSize));
+                             Debug.Log($"Door added between room {roomA.position} and {roomB.position} at {doorPos}");
+                         }*/
+                    if (doorPosition != Vector2Int.zero && !usedDoorPositions1.Contains(doorPosition))
                     {
-                        Vector2Int doorPos;
-                        Vector2Int doorSize;
-
-                        if (doorArea.width > doorArea.height) // Horizontal door
-                        {
-                            doorPos = new Vector2Int(doorArea.x + doorArea.width / 2 - 1, doorArea.y);
-                            doorSize = new Vector2Int(2, 1);
-                        }
-                        else // Vertical door
-                        {
-                            doorPos = new Vector2Int(doorArea.x, doorArea.y + doorArea.height / 2 - 1);
-                            doorSize = new Vector2Int(1, 2);
-                        }
-
-                        // Ensure we do not already have a door at this position
-                        bool doorExists = newDoors.Any(door => door.x == doorPos.x && door.y == doorPos.y && door.width == doorSize.x && door.height == doorSize.y);
-
-                        if (!doorExists)
-                        {
-                            newDoors.Add(new RectInt(doorPos, doorSize));
-                        }
+                        newDoors.Add(new RectInt(doorPosition, Vector2Int.one)); // Size of the door is 1x1
+                        usedDoorPositions1.Add(doorPosition); // Track the door position
+                        Debug.Log($"Door added between room {roomA.position} and {roomB.position} at {doorPosition}");
                     }
                 }
+                
             }
         }
+        Debug.Log($"Final door count: {newDoors.Count}");
     }
+
     void CreateNodes()
     {
          foreach (var room in newRooms)
@@ -235,116 +291,81 @@ public class DungeonGenerator : MonoBehaviour
         hasGenerated = true;
     }
 
-    /*void SplittingRooms1(RectInt room, int numberOfRooms, Room parentRoom = null)
-    {
-        if (numberOfRooms <= 0 || room.width < 10 || room.height < 10)
-        {
-            Room newRoom = new Room(room);
-            newRoom.parentRoom = parentRoom;
-            if (parentRoom != null)
-            {
-                parentRoom.childRooms.Add(newRoom);
-            }
-            newRooms.Add(newRoom); // Add the Room object to newRooms
-            return;
-        }
 
-        int randomNumber = Random.Range(0, 2);
-        bool directionDevider = randomNumber == 0;
-
-        if (directionDevider) // Vertical Split
-        {
-            int minX = room.xMin + 5;
-            int maxX = room.xMax - 5;
-            if (minX >= maxX) return;
-
-            int splitX = Random.Range(minX, maxX);
-            RectInt leftRoom = new RectInt(room.x, room.y, splitX - room.x, room.height);
-            RectInt rightRoom = new RectInt(splitX, room.y, room.xMax - splitX, room.height);
-
-            SplittingRooms1(leftRoom, numberOfRooms - 1, parentRoom);
-            SplittingRooms1(rightRoom, numberOfRooms - 1, parentRoom);
-        }
-        else // Horizontal Split
-        {
-            int minY = room.yMin + 5;
-            int maxY = room.yMax - 5;
-            if (minY >= maxY) return;
-
-            int splitY = Random.Range(minY, maxY);
-            RectInt topRoom = new RectInt(room.x, splitY, room.width, room.yMax - splitY);
-            RectInt bottomRoom = new RectInt(room.x, room.y, room.width, splitY - room.y);
-
-            SplittingRooms1(topRoom, numberOfRooms - 1, parentRoom);
-            SplittingRooms1(bottomRoom, numberOfRooms - 1, parentRoom);
-        }
-    }*/
-
-    /*void MakingDoors1()
+    void MakingDoors1()
     {
         newDoors.Clear();
+        usedRoomPairs.Clear();
         Debug.Log("MakingDoors() is running!");
 
-        HashSet<string> processedWalls = new HashSet<string>();
-
-        for (int i = 1; i < newRooms.Count; i++)
+        for (int i = 0; i < newRooms.Count; i++)
         {
+            RectInt roomA = newRooms[i];
+
             for (int j = i + 1; j < newRooms.Count; j++)
             {
-                Room room1 = newRooms[i]; // Now we are using the Room object
-                Room room2 = newRooms[j];
+                RectInt roomB = newRooms[j];
 
-                // Check if either room is a child of the other
-                if (IsChildRoom(room1, room2) || IsChildRoom(room2, room1))
-                    continue; // Skip if one room is inside the other
-
-                if (AlgorithmsUtils.Intersects(room1.area, room2.area))
+                if (AreRoomsAdjacent(roomA, roomB))
                 {
-                    RectInt doorArea = AlgorithmsUtils.Intersect(room1.area, room2.area);
+                    var pair = (roomA.position, roomB.position);
+                    var reversePair = (roomB.position, roomA.position);
 
-                    if (doorArea.width >= 2 && doorArea.height >= 2) // Ensure enough space for a door
+                    if (usedRoomPairs.Contains(pair) || usedRoomPairs.Contains(reversePair))
+                        continue;
+
+                    // Add door at midpoint of shared wall
+                    Vector2Int doorPosition = GetSharedEdgeMidpoint(roomA, roomB);
+                    if (doorPosition != Vector2Int.zero)
                     {
-                        Vector2Int doorPos;
-                        Vector2Int doorSize;
-
-                        if (doorArea.width > doorArea.height) // Horizontal door
-                        {
-                            doorPos = new Vector2Int(doorArea.x + doorArea.width / 2 - 1, doorArea.y);
-                            doorSize = new Vector2Int(2, 1);
-                        }
-                        else // Vertical door
-                        {
-                            doorPos = new Vector2Int(doorArea.x, doorArea.y + doorArea.height / 2 - 1);
-                            doorSize = new Vector2Int(1, 2);
-                        }
-
-                        string wallKey = GetWallKey(room1.area, room2.area);
-
-                        if (!processedWalls.Contains(wallKey))
-                        {
-                            newDoors.Add(new RectInt(doorPos, doorSize));
-                            processedWalls.Add(wallKey);
-                        }
+                        newDoors.Add(new RectInt(doorPosition, Vector2Int.one));
+                        usedRoomPairs.Add(pair);
+                        Debug.Log($"Door added between room {roomA.position} and {roomB.position} at {doorPosition}");
                     }
+
                 }
             }
         }
-    }*/
 
-   /* bool IsChildRoom(Room parent, Room child)
+        Debug.Log($"Total doors created: {newDoors.Count}");
+    }
+    bool AreRoomsAdjacent(RectInt a, RectInt b)
     {
-        return parent.childRooms.Contains(child);
-    }*/
+        // Check if rooms are touching horizontally
+        bool touchingVertically =
+            (a.xMin < b.xMax && a.xMax > b.xMin) &&
+            (a.yMax == b.yMin || a.yMin == b.yMax);
 
-    /*string GetWallKey(RectInt room1, RectInt room2)
+        // Check if rooms are touching vertically
+        bool touchingHorizontally =
+            (a.yMin < b.yMax && a.yMax > b.yMin) &&
+            (a.xMax == b.xMin || a.xMin == b.xMax);
+
+        return touchingVertically || touchingHorizontally;
+    }
+
+    Vector2Int GetSharedEdgeMidpoint(RectInt a, RectInt b)
     {
-        // Sort the coordinates to ensure consistency in the key
-        int x1 = Mathf.Min(room1.x, room2.x);
-        int y1 = Mathf.Min(room1.y, room2.y);
-        int x2 = Mathf.Max(room1.x + room1.width, room2.x + room2.width);
-        int y2 = Mathf.Max(room1.y + room1.height, room2.y + room2.height);
+        // Rooms touching vertically
+        if (a.yMax == b.yMin || b.yMax == a.yMin)
+        {
+            int minX = Mathf.Max(a.xMin, b.xMin);
+            int maxX = Mathf.Min(a.xMax, b.xMax);
+            int x = (minX + maxX) / 2;
+            int y = a.yMax == b.yMin ? a.yMax : b.yMax; // edge between rooms
+            return new Vector2Int(x, y);
+        }
 
-        return $"{x1},{y1},{x2},{y2}";
-    }*/
+        // Rooms touching horizontally
+        if (a.xMax == b.xMin || b.xMax == a.xMin)
+        {
+            int minY = Mathf.Max(a.yMin, b.yMin);
+            int maxY = Mathf.Min(a.yMax, b.yMax);
+            int y = (minY + maxY) / 2;
+            int x = a.xMax == b.xMin ? a.xMax : b.xMax;
+            return new Vector2Int(x, y);
+        }
 
+        return Vector2Int.zero; // not adjacent
+    }
 }
