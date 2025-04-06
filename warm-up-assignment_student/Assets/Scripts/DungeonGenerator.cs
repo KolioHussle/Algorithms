@@ -18,7 +18,6 @@ public class DungeonGenerator : MonoBehaviour
     private bool hasGenerated = false;
 
     private Graph<RectInt> dungeonGraph;
-    HashSet<(Vector2Int, Vector2Int)> usedRoomPairs = new();
 
     void Start()
     {
@@ -29,7 +28,6 @@ public class DungeonGenerator : MonoBehaviour
         //SplittingRooms(startRoom, roomsToCreate);
         SplittingRooms1(startRoom, roomsToCreate);
         MakingDoors();
-        //MakingDoors1();
 
         CreateNodes();
         CreatdEdges();
@@ -291,44 +289,6 @@ public class DungeonGenerator : MonoBehaviour
         hasGenerated = true;
     }
 
-
-    void MakingDoors1()
-    {
-        newDoors.Clear();
-        usedRoomPairs.Clear();
-        Debug.Log("MakingDoors() is running!");
-
-        for (int i = 0; i < newRooms.Count; i++)
-        {
-            RectInt roomA = newRooms[i];
-
-            for (int j = i + 1; j < newRooms.Count; j++)
-            {
-                RectInt roomB = newRooms[j];
-
-                if (AreRoomsAdjacent(roomA, roomB))
-                {
-                    var pair = (roomA.position, roomB.position);
-                    var reversePair = (roomB.position, roomA.position);
-
-                    if (usedRoomPairs.Contains(pair) || usedRoomPairs.Contains(reversePair))
-                        continue;
-
-                    // Add door at midpoint of shared wall
-                    Vector2Int doorPosition = GetSharedEdgeMidpoint(roomA, roomB);
-                    if (doorPosition != Vector2Int.zero)
-                    {
-                        newDoors.Add(new RectInt(doorPosition, Vector2Int.one));
-                        usedRoomPairs.Add(pair);
-                        Debug.Log($"Door added between room {roomA.position} and {roomB.position} at {doorPosition}");
-                    }
-
-                }
-            }
-        }
-
-        Debug.Log($"Total doors created: {newDoors.Count}");
-    }
     bool AreRoomsAdjacent(RectInt a, RectInt b)
     {
         // Check if rooms are touching horizontally
