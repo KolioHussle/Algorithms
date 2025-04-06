@@ -160,7 +160,7 @@ public class DungeonGenerator : MonoBehaviour
         //List<RectInt> usedDoorPositions = new List<RectInt>();
         List<Vector2Int> usedDoorPositions1 = new List<Vector2Int>();
 
-        for (int i = 1; i < newRooms.Count; i++)
+        for (int i = 0; i < newRooms.Count; i++)
         {
             RectInt roomA = newRooms[i];
             for (int j = i + 1; j < newRooms.Count; j++)
@@ -170,7 +170,7 @@ public class DungeonGenerator : MonoBehaviour
                 if (AreRoomsAdjacent(roomA, roomB)/*AlgorithmsUtils.Intersects(roomA, roomB)*/)
                 {
                     Debug.Log("hello");
-                    Vector2Int doorPosition = GetSharedEdgeMidpoint(roomA, roomB);
+                    Vector2Int doorPosition = GetSharedEdgePoint(roomA, roomB);
 
                     /* RectInt doorArea = AlgorithmsUtils.Intersect(roomA, roomB);
                      if (doorArea.width > 0 && doorArea.height > 0)
@@ -234,13 +234,13 @@ public class DungeonGenerator : MonoBehaviour
 
     void CreatdEdges()
     {
-        for (int i = 1; i < newRooms.Count; i++)
+        for (int i = 0; i < newRooms.Count; i++)
         {
             for (int j = i + 1; j < newRooms.Count; j++)
             {
                 if (AreRoomsAdjacent(newRooms[i], newRooms[j]))
                 {
-                    Vector2Int doorPosition = GetSharedEdgeMidpoint(newRooms[i], newRooms[j]);
+                    Vector2Int doorPosition = GetSharedEdgePoint(newRooms[i], newRooms[j]);
 
                     if (doorPosition != Vector2Int.zero)
                     {
@@ -304,14 +304,14 @@ public class DungeonGenerator : MonoBehaviour
         return touchingVertically || touchingHorizontally;
     }
 
-    Vector2Int GetSharedEdgeMidpoint(RectInt a, RectInt b)
+    Vector2Int GetSharedEdgePoint(RectInt a, RectInt b)
     {
         // Rooms touching vertically
         if (a.yMax == b.yMin || b.yMax == a.yMin)
         {
-            int minX = Mathf.Max(a.xMin, b.xMin);
-            int maxX = Mathf.Min(a.xMax, b.xMax);
-            int x = (minX + maxX) / 2;
+            int minX = Mathf.Max(a.xMin + 2, b.xMin + 2);
+            int maxX = Mathf.Min(a.xMax - 2, b.xMax - 2);
+            int x = Random.Range(minX, maxX);
             int y = a.yMax == b.yMin ? a.yMax : b.yMax; // edge between rooms
             return new Vector2Int(x, y);
         }
@@ -319,9 +319,9 @@ public class DungeonGenerator : MonoBehaviour
         // Rooms touching horizontally
         if (a.xMax == b.xMin || b.xMax == a.xMin)
         {
-            int minY = Mathf.Max(a.yMin, b.yMin);
-            int maxY = Mathf.Min(a.yMax, b.yMax);
-            int y = (minY + maxY) / 2;
+            int minY = Mathf.Max(a.yMin + 2, b.yMin + 2);
+            int maxY = Mathf.Min(a.yMax - 2, b.yMax - 2);
+            int y = Random.Range(minY, maxY);
             int x = a.xMax == b.xMin ? a.xMax : b.xMax;
             return new Vector2Int(x, y);
         }
