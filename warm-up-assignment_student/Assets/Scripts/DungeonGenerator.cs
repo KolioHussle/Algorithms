@@ -19,10 +19,10 @@ public class DungeonGenerator : MonoBehaviour
     private bool hasGenerated = false;
 
     private Graph<Vector2Int> dungeonGraph;
-    [SerializeField]
+    /*[SerializeField]
     private GameObject wall;
     [SerializeField]
-    private GameObject floor;
+    private GameObject floor;*/
 
     void Start()
     {
@@ -37,7 +37,7 @@ public class DungeonGenerator : MonoBehaviour
         CreateNodes();
         CreatdEdges();
         MakeAllConnections();
-        SpawnDungeonAssets();
+        //SpawnDungeonAssets();
     }
 
     void Update()
@@ -301,9 +301,9 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
-    public void SpawnDungeonAssets()
+    /*public void SpawnDungeonAssets()
     {
-        /* */
+        
         HashSet<Vector2Int> alreadyWall = new HashSet<Vector2Int>();
         bool hasWall = false;
         foreach (var room in newRooms)
@@ -347,7 +347,7 @@ public class DungeonGenerator : MonoBehaviour
             }
         }
 
-    }
+    }*/
 
     IEnumerator ShowingDoors()
     {
