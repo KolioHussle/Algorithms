@@ -20,15 +20,23 @@ public class Graph<T>
     }
 
 
-    public void AddEdge(T fromNode, T toNode)
+    public void AddEdge(T node1,T node2)
     {
-        if (!adjacencyList.ContainsKey(fromNode) || !adjacencyList.ContainsKey(toNode))
+        if (!adjacencyList.ContainsKey(node1) || !adjacencyList.ContainsKey(node2))
         {
             Debug.Log("One or both nodes do not exist in the graph.");
             return;
         }
-        adjacencyList[fromNode].Add(toNode);
-        adjacencyList[toNode].Add(fromNode);
+
+        if (!adjacencyList[node1].Contains(node2))
+        {
+            adjacencyList[node1].Add(node2);
+        }
+
+        if (!adjacencyList[node1].Contains(node2))
+        {
+            adjacencyList[node1].Add(node2);
+        }
     }
 
     public List<T> GetNeighbors(T node)
@@ -77,11 +85,11 @@ public class Graph<T>
         }
     }
 
-    public void BFS(T startNode)
+    public HashSet<T> BFS(T startNode)
     {
         //List<T> queue = new List<T>();
         Queue<T> qeue2 = new Queue<T>();
-        List<T> discovered = new List<T>();
+        HashSet<T> discovered = new HashSet<T>();
 
 
         T v = startNode;
@@ -108,6 +116,7 @@ public class Graph<T>
                 }
             }
         }
+        return discovered;
     }
 
     public void DFS(T startNode)

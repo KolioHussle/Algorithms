@@ -19,6 +19,10 @@ public class DungeonGenerator : MonoBehaviour
     private bool hasGenerated = false;
 
     private Graph<Vector2Int> dungeonGraph;
+    [SerializeField]
+    private GameObject wall;
+    [SerializeField]
+    private GameObject floor;
 
     void Start()
     {
@@ -32,6 +36,8 @@ public class DungeonGenerator : MonoBehaviour
 
         CreateNodes();
         CreatdEdges();
+        MakeAllConnections();
+        SpawnDungeonAssets();
     }
 
     void Update()
@@ -228,8 +234,23 @@ public class DungeonGenerator : MonoBehaviour
                {
                 Vector2Int center = GetRoomCenter(room);
                 dungeonGraph.AddNode(center);
-               }
+            }
          }
+        for (int i = 0; i < newRooms.Count; i++)
+        {
+            for (int j = i + 1; j < newRooms.Count; j++)
+            {
+                if (AreRoomsAdjacent(newRooms[i], newRooms[j]))
+                {
+                    Vector2Int doorPosition = GetSharedEdgePoint(newRooms[i], newRooms[j]);
+
+                    if (doorPosition != Vector2Int.zero)
+                    {
+                        dungeonGraph.AddNode(doorPosition);
+                    }
+                }
+            }
+        }
     }
 
     void CreatdEdges()
@@ -244,10 +265,22 @@ public class DungeonGenerator : MonoBehaviour
 
                     if (doorPosition != Vector2Int.zero)
                     {
-                        dungeonGraph.AddEdge(GetRoomCenter(newRooms[i]), GetRoomCenter(newRooms[j])); // Connect the room centers
+                        Vector2Int center1 = GetRoomCenter(newRooms[i]);
+                        Vector2Int center2 = GetRoomCenter(newRooms[j]);
+
+                        dungeonGraph.AddEdge(center1, doorPosition);
+                        dungeonGraph.AddEdge(center2, doorPosition);
                     }
                 }
             }
+        }
+    }
+
+    void MakeAllConnections()
+    {
+        foreach(var node in dungeonGraph.GetNodes())
+        {
+            dungeonGraph.BFS(node);
         }
     }
 
@@ -266,6 +299,54 @@ public class DungeonGenerator : MonoBehaviour
                 Debug.DrawLine(nodePosition, neighborPosition, Color.red, 10f);
             }
         }
+    }
+
+    public void SpawnDungeonAssets()
+    {
+        /* */
+        HashSet<Vector2Int> alreadyWall = new HashSet<Vector2Int>();
+        bool hasWall = false;
+        foreach (var room in newRooms)
+        {
+            for (int x = 0; x < room.width; x++)
+            {
+                if ((room.x + x != newDoors[x].x || room.y != newDoors[x].y) && !hasWall)
+                {
+                    Instantiate(wall, new Vector3(room.x + x + 0.5f, 0.5f, room.y + 0.5f), Quaternion.identity);
+                }
+                if ((room.x + x != newDoors[x].x || room.y + room.height - 1 != newDoors[x].y) && !hasWall)
+                {
+                    Instantiate(wall, new Vector3(room.x + x + 0.5f, 0.5f, room.y + room.height - 0.5f), Quaternion.identity);
+                }
+            }
+
+            for (int y = 0; y < room.height; y++)
+            {
+                if ((room.y + y != newDoors[y].y || room.x != newDoors[y].x) && !hasWall)
+                {
+                    Instantiate(wall, new Vector3(room.x + 0.5f, 0.5f, room.y + y + 0.5f), Quaternion.identity);
+                }
+                if ((room.y + y != newDoors[y].y || room.x + room.width - 1 != newDoors[y].x) && !hasWall)
+                {
+                    Instantiate(wall, new Vector3(room.x + room.width - 0.5f, 0.5f, room.y + y + 0.5f), Quaternion.identity);
+                }
+            }
+
+            for (int x = 0; x < room.width; x++)
+            {
+                for (int y = 0; y < room.height; y++)
+                {
+                    Instantiate(floor, new Vector3(room.x + x, 0, room.y + y), floor.transform.rotation);
+                }
+            }
+
+            if (room.position != Vector2Int.zero && !alreadyWall.Contains(room.position))
+            {
+                alreadyWall.Add(room.position);
+                hasWall = true;
+            }
+        }
+
     }
 
     IEnumerator ShowingDoors()
