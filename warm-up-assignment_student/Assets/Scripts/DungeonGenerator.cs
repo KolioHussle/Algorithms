@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.AI.Navigation;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditor.Overlays;
@@ -19,10 +20,12 @@ public class DungeonGenerator : MonoBehaviour
     private bool hasGenerated = false;
 
     private Graph<Vector2Int> dungeonGraph;
-    /*[SerializeField]
+    [SerializeField]
     private GameObject wall;
     [SerializeField]
-    private GameObject floor;*/
+    private GameObject floor;
+
+    public NavMeshSurface navMeshSurface;
 
     void Start()
     {
@@ -36,8 +39,8 @@ public class DungeonGenerator : MonoBehaviour
 
         CreateNodes();
         CreatdEdges();
-        MakeAllConnections();
-        //SpawnDungeonAssets();
+        SpawnDungeonAssets();
+        BakeNavMesh();
     }
 
     void Update()
@@ -236,20 +239,9 @@ public class DungeonGenerator : MonoBehaviour
                 dungeonGraph.AddNode(center);
             }
          }
-        for (int i = 0; i < newRooms.Count; i++)
+        foreach (var door in newDoors)
         {
-            for (int j = i + 1; j < newRooms.Count; j++)
-            {
-                if (AreRoomsAdjacent(newRooms[i], newRooms[j]))
-                {
-                    Vector2Int doorPosition = GetSharedEdgePoint(newRooms[i], newRooms[j]);
-
-                    if (doorPosition != Vector2Int.zero)
-                    {
-                        dungeonGraph.AddNode(doorPosition);
-                    }
-                }
-            }
+            dungeonGraph.AddNode(door.position);
         }
     }
 
@@ -276,78 +268,88 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
-    void MakeAllConnections()
-    {
-        foreach(var node in dungeonGraph.GetNodes())
-        {
-            dungeonGraph.BFS(node);
-        }
-    }
-
     void VisualizeGraph()
     {
         foreach (var node in dungeonGraph.GetNodes())
         {
-            // Visualize the node (center of the room) with a marker (e.g., a sphere in Unity)
+            // Visualize the node (center of the room + doors) with a circle
             Vector3 nodePosition = new Vector3(node.x, 0, node.y); // Convert from 2D to 3D space
-            Debug.DrawLine(nodePosition, nodePosition + Vector3.up, Color.green, 10f); // Draw a line above the node for visibility
+            DebugExtension.DebugCircle(nodePosition);
 
             foreach (var neighbor in dungeonGraph.GetNeighbors(node))
             {
                 // Draw a line to each neighbor
                 Vector3 neighborPosition = new Vector3(neighbor.x, 0, neighbor.y); // Convert from 2D to 3D space
-                Debug.DrawLine(nodePosition, neighborPosition, Color.red, 10f);
+                Debug.DrawLine(nodePosition, neighborPosition, Color.red);
             }
         }
     }
 
-    /*public void SpawnDungeonAssets()
+    public void SpawnDungeonAssets()
     {
-        
-        HashSet<Vector2Int> alreadyWall = new HashSet<Vector2Int>();
-        bool hasWall = false;
+        HashSet<Vector2Int> placedFloors = new HashSet<Vector2Int>();
+        HashSet<Vector2Int> placedWalls = new HashSet<Vector2Int>();
+        HashSet<Vector2Int> doorPositions = new HashSet<Vector2Int>();
+
+        foreach(var door in newDoors)
+        {
+            doorPositions.Add(door.position);
+        }
+
         foreach (var room in newRooms)
         {
+            // Place floors
             for (int x = 0; x < room.width; x++)
             {
-                if ((room.x + x != newDoors[x].x || room.y != newDoors[x].y) && !hasWall)
+                for (int y = 0; y < room.height; y++)
                 {
-                    Instantiate(wall, new Vector3(room.x + x + 0.5f, 0.5f, room.y + 0.5f), Quaternion.identity);
+                    Vector2Int pos = new Vector2Int(room.x + x, room.y + y);
+                    if (!placedFloors.Contains(pos))
+                    {
+                        placedFloors.Add(pos);
+                        Instantiate(floor, new Vector3(pos.x, 0, pos.y), floor.transform.rotation);
+                    }
                 }
-                if ((room.x + x != newDoors[x].x || room.y + room.height - 1 != newDoors[x].y) && !hasWall)
+            }
+
+            // Place walls along the border
+            for (int x = 0; x < room.width; x++)
+            {
+                Vector2Int bot = new Vector2Int(room.x + x, room.y);
+                Vector2Int top = new Vector2Int(room.x + x, room.y + room.height - 1);
+
+                if (!placedWalls.Contains(bot) && !doorPositions.Contains(bot))
                 {
-                    Instantiate(wall, new Vector3(room.x + x + 0.5f, 0.5f, room.y + room.height - 0.5f), Quaternion.identity);
+                    placedWalls.Add(bot);
+                    Instantiate(wall, new Vector3(bot.x + 0.5f, 0.5f, bot.y + 0.5f), Quaternion.identity);
+                }
+
+                if (!placedWalls.Contains(top) && !doorPositions.Contains(top))
+                {
+                    placedWalls.Add(top);
+                    Instantiate(wall, new Vector3(top.x + 0.5f, 0.5f, top.y + 0.5f), Quaternion.identity);
                 }
             }
 
             for (int y = 0; y < room.height; y++)
             {
-                if ((room.y + y != newDoors[y].y || room.x != newDoors[y].x) && !hasWall)
-                {
-                    Instantiate(wall, new Vector3(room.x + 0.5f, 0.5f, room.y + y + 0.5f), Quaternion.identity);
-                }
-                if ((room.y + y != newDoors[y].y || room.x + room.width - 1 != newDoors[y].x) && !hasWall)
-                {
-                    Instantiate(wall, new Vector3(room.x + room.width - 0.5f, 0.5f, room.y + y + 0.5f), Quaternion.identity);
-                }
-            }
+                Vector2Int left = new Vector2Int(room.x, room.y + y);
+                Vector2Int right = new Vector2Int(room.x + room.width - 1, room.y + y);
 
-            for (int x = 0; x < room.width; x++)
-            {
-                for (int y = 0; y < room.height; y++)
+                if (!placedWalls.Contains(left) && !doorPositions.Contains(left))
                 {
-                    Instantiate(floor, new Vector3(room.x + x, 0, room.y + y), floor.transform.rotation);
+                    placedWalls.Add(left);
+                    Instantiate(wall, new Vector3(left.x + 0.5f, 0.5f, left.y + 0.5f), Quaternion.identity);
                 }
-            }
 
-            if (room.position != Vector2Int.zero && !alreadyWall.Contains(room.position))
-            {
-                alreadyWall.Add(room.position);
-                hasWall = true;
+                if (!placedWalls.Contains(right) && !doorPositions.Contains(right))
+                {
+                    placedWalls.Add(right);
+                    Instantiate(wall, new Vector3(right.x + 0.5f, 0.5f, right.y + 0.5f), Quaternion.identity);
+                }
             }
         }
-
-    }*/
+    }
 
     IEnumerator ShowingDoors()
     {
@@ -368,6 +370,11 @@ public class DungeonGenerator : MonoBehaviour
         }
 
         hasGenerated = true;
+    }
+
+    public void BakeNavMesh()
+    {
+        navMeshSurface.BuildNavMesh();
     }
 
     bool AreRoomsAdjacent(RectInt a, RectInt b)
