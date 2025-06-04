@@ -28,7 +28,7 @@ public class Graph<T>
             return;
         }
 
-        if (!adjacencyList[node1].Contains(node2))
+        /*if (!adjacencyList[node1].Contains(node2))
         {
             adjacencyList[node1].Add(node2);
         }
@@ -36,6 +36,14 @@ public class Graph<T>
         if (!adjacencyList[node1].Contains(node2))
         {
             adjacencyList[node1].Add(node2);
+        }*/
+        if (!adjacencyList[node1].Contains(node2))
+        {
+            adjacencyList[node1].Add(node2);
+        }
+        if (!adjacencyList[node2].Contains(node1))
+        {
+            adjacencyList[node2].Add(node1);
         }
     }
 
@@ -85,37 +93,62 @@ public class Graph<T>
         }
     }
 
-    public HashSet<T> BFS(T startNode)
+    /*public HashSet<T> BFS(T startNode)
     {
-        //List<T> queue = new List<T>();
         Queue<T> qeue2 = new Queue<T>();
         HashSet<T> discovered = new HashSet<T>();
 
-
         T v = startNode;
-        //queue.Add(v);
 
         qeue2.Enqueue(v);
 
         discovered.Add(v);
-        //Debug.Log(v + " was discovered");
 
-        while (/*queue.Count*/ qeue2.Count > 0)
+        while (/ qeue2.Count > 0)
         {
-            //v = queue[0];
-            //queue.RemoveAt(0);
             v = qeue2.Dequeue();
             Debug.Log(v);
             foreach (var w in GetNeighbors(v))
             {
                 if (!discovered.Contains(w))
                 {
-                    //queue.Add(w);
                     qeue2.Enqueue(w);
                     discovered.Add(w);
                 }
             }
         }
+        return discovered;
+    }*/
+    public HashSet<T> BFS(T startNode, T endNode = default)
+    {
+        Queue<T> queue = new Queue<T>();
+        HashSet<T> discovered = new HashSet<T>();
+
+        queue.Enqueue(startNode);
+        discovered.Add(startNode);
+
+        while (queue.Count > 0)
+        {
+            T v = queue.Dequeue();
+            Debug.Log(v);
+
+            // Stop early if destination is found
+            if (!EqualityComparer<T>.Default.Equals(endNode, default) && EqualityComparer<T>.Default.Equals(v, endNode))
+            {
+                Debug.Log("Reached destination node: " + v);
+                break;
+            }
+
+            foreach (var w in GetNeighbors(v))
+            {
+                if (!discovered.Contains(w))
+                {
+                    queue.Enqueue(w);
+                    discovered.Add(w);
+                }
+            }
+        }
+
         return discovered;
     }
 

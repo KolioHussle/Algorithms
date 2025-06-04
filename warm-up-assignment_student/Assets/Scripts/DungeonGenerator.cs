@@ -245,7 +245,7 @@ public class DungeonGenerator : MonoBehaviour
         }
     }
 
-    void CreatdEdges()
+    /*void CreatdEdges()
     {
         for (int i = 0; i < newRooms.Count; i++)
         {
@@ -266,6 +266,28 @@ public class DungeonGenerator : MonoBehaviour
                 }
             }
         }
+    }*/
+    void CreatdEdges()
+    {
+        foreach (var door in newDoors)
+        {
+            Vector2Int doorPos = door.position;
+
+            foreach (var room in newRooms)
+            {
+                if (IsOnRoomBorder(room, doorPos))
+                {
+                    Vector2Int roomCenter = GetRoomCenter(room);
+                    dungeonGraph.AddEdge(roomCenter, doorPos);
+                }
+            }
+        }
+    }
+    bool IsOnRoomBorder(RectInt room, Vector2Int pos)
+    {
+        bool onXEdge = (pos.x == room.xMin || pos.x == room.xMax - 1) && pos.y >= room.yMin && pos.y < room.yMax;
+        bool onYEdge = (pos.y == room.yMin || pos.y == room.yMax - 1) && pos.x >= room.xMin && pos.x < room.xMax;
+        return onXEdge || onYEdge;
     }
 
     void VisualizeGraph()
@@ -349,6 +371,7 @@ public class DungeonGenerator : MonoBehaviour
                 }
             }
         }
+   
     }
 
     IEnumerator ShowingDoors()
