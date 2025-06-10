@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
+  - component: {fileID: 330585549}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -286,6 +287,21 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &330585549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6729cd23f98406445be9cecc19519f8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 2075302708}
+  offset: {x: 0, y: 10, z: 0}
+  followSpeed: 5
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -415,6 +431,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 6320580021454278009, guid: ff538460486eda9418ff16ef7365525c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f96821bbefeea864b9b418af4b8615ac, type: 2}
     - target: {fileID: 7242048785304937134, guid: ff538460486eda9418ff16ef7365525c, type: 3}
       propertyPath: m_Name
       value: Player
@@ -495,8 +515,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 50
   height: 50
-  roomsToCreate: 10
-  timeToGenerate: 0.03
+  roomsToCreate: 30
+  timeToGenerate: 0.1
   wall: {fileID: 2392626294288303227, guid: 22e6d29cc1f82be42a63b6812b4b7d3d, type: 3}
   floor: {fileID: 4439535064980914313, guid: 0c090a0c52c340a40baaca825ee36782, type: 3}
   navMeshSurface: {fileID: 1313990617}
@@ -639,6 +659,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f36d97e3835909479e10d0da1452b00, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!4 &2075302708 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8902522576258831947, guid: ff538460486eda9418ff16ef7365525c, type: 3}
+  m_PrefabInstance: {fileID: 600169145}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
